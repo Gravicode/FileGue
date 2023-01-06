@@ -1,0 +1,53 @@
+﻿@inherits LayoutComponentBase
+@inject IJSRuntime IJS
+@using Blazored.Toast.Configuration
+@page "/auth/{Slug}"
+<!-- loader Start -->
+<div id="loading">
+    <div id="loading-center">
+    </div>
+</div>
+<!-- loader END -->
+
+<div class="wrapper">
+    <section class="login-content">
+        <div class="container h-100">
+            <CascadingValue Value="this">
+                @Body
+            </CascadingValue>           
+        </div>
+    </section>
+</div>
+           
+
+
+<BlazoredToasts Position="ToastPosition.BottomRight"
+Timeout="10"
+SuccessClass="success-toast-override"
+SuccessIconClass="fa fa-thumbs-up"
+ErrorIconClass="fa fa-bug" />
+
+@code{
+    [Parameter]
+    public string Slug { get; set; } = "login";
+
+    protected override void OnParametersSet()
+    {
+        /*
+        // pull out the "Slug" parameter from the route data
+        object slug = null;
+        if ((this.Body.Target as RouteView)?.RouteData.RouteValues?.TryGetValue("Slug", out slug) == true)
+        {
+            //Slug = slug?.ToString();
+        }
+        */
+    }
+    protected override void OnAfterRender(bool firstRender)
+    {
+
+        if (firstRender)
+        {
+            IJS.InvokeVoidAsync("InitJs");
+        }
+    }
+}
