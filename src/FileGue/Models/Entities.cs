@@ -10,6 +10,25 @@ using System.Reflection;
 namespace FileGue.Models
 {
     #region redis model
+    [Table("share_link")]
+    //[Document(StorageType = StorageType.Json)]
+    public class ShareLink
+    {
+        public long Id { get; set; }
+
+        public string Name { get; set; }
+
+        public string LinkUid { set; get; }
+
+        public string OwnerUsername { get; set; }
+
+        public List<DriveFolder> Folders { get; set; }
+        public List<DriveFile> Files { get; set; }
+
+        public DateTime CreatedDate { get; set; }
+
+        public List<ShareInfo> Access { get; set; }
+    }
     [Table("page_view")]
     [Document(StorageType = StorageType.Json)]
     public class PageView
@@ -56,10 +75,10 @@ namespace FileGue.Models
         //[Indexed(Sortable = true)]        
         public string UserName { set; get; }
         //[Indexed(Sortable = true)]        
-        public DriveFolder RootFolder { get; set; } = new() { IsRoot=true };
+        public DriveFolder RootFolder { get; set; } = new() { IsRoot = true };
 
     }
-        [Table("notification")]
+    [Table("notification")]
     [Document(StorageType = StorageType.Json)]
     public class Notification
     {
@@ -165,7 +184,7 @@ namespace FileGue.Models
         [Indexed(Sortable = true)]
         public string? LinkedIn { set; get; }
         [Indexed(Sortable = true)]
-    
+
         public bool TwoFactor { set; get; }
         [Indexed(Sortable = true)]
         public bool AlertIntruder { set; get; }
@@ -175,7 +194,11 @@ namespace FileGue.Models
     public enum Roles { Admin, User, Pengurus, Unknown }
     #endregion
     #region helpers model
-
+    public class SearchItem
+    {
+        public DriveFolder ParentFolder { get; set; }
+        public DriveFile File { get; set; }
+    }
     public class FileTypes
     {
         public const string Image = "Image";
@@ -188,15 +211,18 @@ namespace FileGue.Models
         public const string Pdf = "Pdf";
         public const string Text = "Text";
     }
+
+
     public class DriveFolder
     {
         public string UID { get; set; }
         public string Name { get; set; }
         public long Size { get; set; }
         public DateTime CreatedDate { get; set; }
-        public DateTime UpdateDate { get; set; }
+        public DateTime UpdatedDate { get; set; }
         public bool IsRoot { get; set; } = false;
         public bool Favorite { get; set; } = false;
+        public string Path { get; set; }
         public List<DriveFile> Files { get; set; } = new();
         public List<DriveFolder> Folders { get; set; } = new();
     }
@@ -209,10 +235,11 @@ namespace FileGue.Models
         public string Extension { get; set; }
         public long Size { get; set; }
         public bool Favorite { get; set; } = false;
+        public string Path { get; set; }
         public DateTime CreatedDate { get; set; }
-        public DateTime UpdateDate { get; set; }
+        public DateTime UpdatedDate { get; set; }
         public string FileUrl { get; set; }
-        //public DriveFolder ParentFolder { set; get; }
+        public string ParentFolderUid { set; get; }
     }
     public class PageViewMonth
     {
@@ -267,11 +294,17 @@ namespace FileGue.Models
         public string Message { get; set; }
         public bool IsSucceed { get; set; }
     }
+    public enum ShareAccess { Read, Write }
+    public class ShareInfo
+    {
+        public List<string> Usernames { get; set; }
+        public ShareAccess Access { get; set; }
+    }
     #endregion
 
-    
 
-  
+
+
 
 
 }

@@ -49,6 +49,7 @@ builder.Services.AddTransient<PageViewService>();
 builder.Services.AddSingleton<AppState>();
 builder.Services.AddTransient<CacheDataService>();
 builder.Services.AddTransient<DriveService>();
+builder.Services.AddTransient<ShareLinkService>();
 
 builder.Services.AddTransient<NotificationService>();
 
