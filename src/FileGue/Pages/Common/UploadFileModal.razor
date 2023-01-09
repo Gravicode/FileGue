@@ -38,7 +38,7 @@
                         <label for="nim">Upload Files</label>
                         @if (!string.IsNullOrEmpty(FileUrl))
                         {
-                            <div class="alert alert-info"> File sudah upload.</div>
+                            <div class="alert alert-info"> File sudah di upload.</div>
                         }
                         else
                         {
@@ -186,7 +186,7 @@
                 string newName = string.Empty;
 
                 newName = $"upload_{SelectedFolder.Name}_{UserName}_{DateTime.Now.ToString("dd_MM_yyyy_HH_mm_ss")}_{file.Name}";
-                var FileUrl = $"{AppConstants.UploadUrlPrefix}{newName}";
+                FileUrl = $"{AppConstants.UploadUrlPrefix}{newName}";
                 await AzureBlobHelper.UploadFile(newName, bytes);
                 var newFile = new DriveFile()
                     {
