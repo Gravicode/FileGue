@@ -1,0 +1,42 @@
+﻿@inherits LayoutComponentBase
+@inject IJSRuntime IJS
+@using Blazored.Toast.Configuration
+
+
+<!-- loader Start -->
+<div id="loading">
+    <div id="loading-center">
+    </div>
+</div>
+<!-- loader END -->
+
+<div class="wrapper">
+    <div class="mt-5 iq-maintenance">
+        <CascadingValue Value="this">
+            @Body
+        </CascadingValue>
+    </div>
+</div>
+
+
+<BlazoredToasts Position="ToastPosition.BottomRight"
+Timeout="10"
+SuccessClass="success-toast-override"
+SuccessIconClass="fa fa-thumbs-up"
+ErrorIconClass="fa fa-bug" />
+
+@code {
+  
+    protected override void OnParametersSet()
+    {
+       
+    }
+    protected override void OnAfterRender(bool firstRender)
+    {
+
+        if (firstRender)
+        {
+            IJS.InvokeVoidAsync("InitJs");
+        }
+    }
+}

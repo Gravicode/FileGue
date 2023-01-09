@@ -50,6 +50,7 @@ builder.Services.AddSingleton<AppState>();
 builder.Services.AddTransient<CacheDataService>();
 builder.Services.AddTransient<DriveService>();
 builder.Services.AddTransient<ShareLinkService>();
+builder.Services.AddTransient<StorageInfoService>();
 builder.Services.AddTransient<NotificationService>();
 
 builder.Services.AddCors(options =>

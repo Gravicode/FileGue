@@ -1,0 +1,218 @@
+﻿@inject IJSRuntime IJS
+@inject IToastService toastService
+@inject AzureBlobHelper AzureBlobHelper;
+@inject DriveService DriveSvc
+@inject UserProfileService UserSvc
+@inject StorageInfoService StorageSvc
+@using System.IO
+@inject AppState AppState
+<div class="modal" tabindex="-1" role="dialog" id="uploadFileModal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">@CustomHeader</h5>
+
+
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+
+                    <div class="form-group">
+                        <label for="kategori">Select Folder:</label>
+
+                        <select @onchange="SelectFolder" id="jenis">
+                            @if (MyDrive != null)
+                                foreach (var folder in MyDrive.RootFolder.Folders)
+                                {
+                                    <option value="@folder.UID">@folder.Name</option>
+                                }
+                        </select>
+
+                    </div>
+
+
+                    <div class="form-group">
+                        <label for="nim">Upload Files</label>
+                        @if (!string.IsNullOrEmpty(FileUrl))
+                        {
+                            <div class="alert alert-info"> File sudah upload.</div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning"> Select files to upload.</div>
+                        }
+                        <InputFile id="fileInput2" accept=".jpg,.png,.jpeg,.gif,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.mp3,.mp4,.avi" multiple OnChange="UploadFiles" />
+
+                    </div>
+
+
+                    <button type="button" @onclick="Submit" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    public string FileUrl { get; set; }
+    [Parameter]
+    public string CustomHeader { get; set; } = "Upload Files";
+
+    public List<DriveFile> UploadedFiles { get; set; } = new();
+
+    public DriveFolder SelectedFolder { get; set; } = new();
+    public string SelectedFolderUID { get; set; } 
+
+    [Parameter]
+    public Action DataChanged { get; set; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    string UserName;
+
+    Drive MyDrive { set; get; }
+    StorageInfo MyStorage { set; get; }
+    UserProfile SelUser { set; get; }
+
+    void SelectFolder(ChangeEventArgs e)
+    {
+        SelectedFolderUID = e.Value.ToString();
+        SelectedFolder = MyDrive.RootFolder.Folders.Where(x => x.UID == SelectedFolderUID).FirstOrDefault();
+    }
+    protected override async Task OnInitializedAsync()
+    {
+
+        var user = (await authenticationStateTask).User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            UserName = user.Identity.Name;
+            DriveSvc.InitDrive(UserName);
+            MyDrive = DriveSvc.MyDrive;
+            SelUser = UserSvc.GetItemByUsername(UserName);
+        }
+        if (SelectedFolder == null && MyDrive.RootFolder.Folders.Count>0)
+        {
+            SelectedFolder = MyDrive.RootFolder.Folders[0];
+            SelectedFolderUID = SelectedFolder.UID;
+        }
+
+    }
+
+    public void Reset()
+    {
+
+        UploadedFiles.Clear();
+    }
+
+    private async void Submit()
+    {
+        try
+        {
+            var ErrorMsg = string.Empty;
+            if (SelectedFolder==null)
+            {
+                ErrorMsg += "Please select folder first. ";
+            }
+            if (UploadedFiles.Count <= 0)
+            {
+                ErrorMsg += "Please select file first. ";
+            }
+            if (ErrorMsg.Length > 0)
+            {
+                toastService.ShowError(ErrorMsg);
+                return;
+            }
+
+            foreach (var file in UploadedFiles)
+            {
+                SelectedFolder.Files.Add(file);
+            }
+            DriveSvc.Save();
+            var used = DriveSvc.GetUsedSize();
+            MyStorage = StorageSvc.GetByUsername(UserName);
+            MyStorage.UsedSize = used;           
+            var res = StorageSvc.UpdateData(MyStorage);
+            await CloseTaskModal();
+            DataChanged?.Invoke();
+            toastService.ShowSuccess("Files saved.");
+            AppState.RefreshFolder(SelectedFolderUID);
+            AppState.RefreshStorage(UserName);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            toastService.ShowError("error occured: " + ex);
+        }
+
+    }
+
+
+    private async Task CloseTaskModal()
+    {
+        await IJS.InvokeAsync<object>("CloseModal", "uploadFileModal");
+    }
+
+
+    private async Task UploadFiles(InputFileChangeEventArgs e)
+    {
+        var ErrorMsg = string.Empty;
+        if (SelectedFolder == null)
+        {
+            ErrorMsg += "Please select folder first. ";
+        }
+       
+        if (ErrorMsg.Length > 0)
+        {
+            toastService.ShowError(ErrorMsg);
+            return;
+        }
+        foreach (var file in e.GetMultipleFiles(e.FileCount))
+        {
+
+            //var file = e.File;
+            if (file != null)
+            {
+                var ms = new MemoryStream();
+                await file.OpenReadStream().CopyToAsync(ms);
+                var bytes = ms.ToArray();
+                //SKiaImageHelper.FixedSize(ms, 900, 500, false);
+                string newName = string.Empty;
+
+                newName = $"upload_{SelectedFolder.Name}_{UserName}_{DateTime.Now.ToString("dd_MM_yyyy_HH_mm_ss")}_{file.Name}";
+                var FileUrl = $"{AppConstants.UploadUrlPrefix}{newName}";
+                await AzureBlobHelper.UploadFile(newName, bytes);
+                var newFile = new DriveFile()
+                    {
+                        CreatedDate = DateHelper.GetLocalTimeNow(),
+                        Extension = Path.GetExtension(file.Name),
+                        Favorite = false,
+                        FileType = FileTypes.GetFileType(file.Name),
+                        FileUrl = FileUrl,
+                        ParentFolderUid = SelectedFolder.UID,
+                        Name = file.Name,
+                        Path = $"/{SelectedFolder.Name}/{file.Name}",
+                        Size = file.Size,
+                        UID = UIDHelper.CreateNewUID(),
+                        UpdatedDate =
+                    DateHelper.GetLocalTimeNow(), Owner = SelUser.FullName
+                    };
+                UploadedFiles.Add(newFile);
+
+            }
+        }
+    }
+
+
+
+
+}
+@code {
+
+}

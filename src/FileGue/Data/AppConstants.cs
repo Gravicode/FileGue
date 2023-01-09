@@ -12,6 +12,8 @@ namespace FileGue.Data
         public static string StorageSecret = "";
         public static string StorageBucket = "";
 
+        public static long DefaultStorageSize = 21474836480;
+
         public static string UploadUrlPrefix = "https://storagemurahaje.blob.core.windows.net/FileGue";
         public const int FACE_WIDTH = 180;
         public const int FACE_HEIGHT = 135;

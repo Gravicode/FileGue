@@ -1,0 +1,120 @@
+﻿@inject IJSRuntime IJS
+@inject IToastService toastService
+@inject AzureBlobHelper AzureBlobHelper;
+@inject DriveService DriveSvc
+@inject AppState AppState
+
+<div class="modal" tabindex="-1" role="dialog" id="newFolderModal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">@CustomHeader</h5>
+
+
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <EditForm Model="@TaskObject" OnValidSubmit="@HandleValidSubmit">
+                    <DataAnnotationsValidator />
+                    
+                    <div class="form-group">
+                        <label for="judul">Folder Name</label>
+                        <InputText id="judul" class="form-control" @bind-Value="@TaskObject.Name" />
+                        <ValidationMessage For="@(() => TaskObject.Name)" />
+                    </div> 
+                    <div class="form-group">
+                        <label for="ket">Description</label>
+                        <InputTextArea id="ket" class="form-control" @bind-Value="@TaskObject.Desc" />
+                        <ValidationMessage For="@(() => TaskObject.Desc)" />
+                    </div>
+                  
+
+                    <button type="submit" class="btn btn-primary">Create</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                </EditForm>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    string UserName;
+    public string FileUrl { get; set; }
+    [Parameter]
+    public string CustomHeader { get; set; } = "Create New Folder";
+    [Parameter]
+    public DriveFolder TaskObject { get; set; } = new();
+    [Parameter]
+    public Action DataChanged { get; set; }
+
+    Drive MyDrive { set; get; }
+    protected override async Task OnInitializedAsync()
+    {
+
+        var user = (await authenticationStateTask).User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            UserName = user.Identity.Name;
+            DriveSvc.InitDrive(UserName);
+            MyDrive = DriveSvc.MyDrive;
+        }
+
+
+    }
+
+
+    private async void HandleValidSubmit()
+    {
+        try
+        {
+            var ErrorMsg = string.Empty;
+            if (string.IsNullOrEmpty(TaskObject.Name))
+            {
+                ErrorMsg += "Please type folder name. ";
+            }
+            if (string.IsNullOrEmpty(TaskObject.Desc))
+            {
+                ErrorMsg += "Please type folder description. ";
+            }
+            if (ErrorMsg.Length > 0)
+            {
+                toastService.ShowError(ErrorMsg);
+                return;
+            }
+            TaskObject.UID = UIDHelper.CreateNewUID();
+            TaskObject.CreatedDate = DateHelper.GetLocalTimeNow();
+            TaskObject.Files = new();
+            TaskObject.Folders = new();
+            TaskObject.IsRoot = false;
+            TaskObject.Path = "/" + TaskObject.Name;
+            TaskObject.Size = 0;
+            TaskObject.UpdatedDate = DateHelper.GetLocalTimeNow();
+            MyDrive.RootFolder.Folders.Add(TaskObject);
+            DriveSvc.Save();
+            await CloseTaskModal();
+            DataChanged?.Invoke();
+            toastService.ShowSuccess("Folder created.");
+            AppState.RefreshDrive(UserName);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            toastService.ShowError("error occured: "+ex);
+        }
+
+    }
+
+ 
+    private async Task CloseTaskModal()
+    {
+        await IJS.InvokeAsync<object>("CloseModal", "newFolderModal");
+    }
+
+
+}

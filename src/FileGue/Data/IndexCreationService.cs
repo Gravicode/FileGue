@@ -28,6 +28,7 @@ public class IndexCreationService
         await _provider.Connection.CreateIndexAsync(typeof(UserProfile));
         await _provider.Connection.CreateIndexAsync(typeof(Log));
         await _provider.Connection.CreateIndexAsync(typeof(PageView));
+        await _provider.Connection.CreateIndexAsync(typeof(StorageInfo));
         
     }
 

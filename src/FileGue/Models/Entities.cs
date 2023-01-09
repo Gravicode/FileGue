@@ -1,4 +1,5 @@
-﻿using GemBox.Document;
+﻿using FileGue.Data;
+using GemBox.Document;
 using Microsoft.CodeAnalysis;
 using Redis.OM.Modeling;
 using ServiceStack.Web;
@@ -29,7 +30,35 @@ namespace FileGue.Models
 
         public List<ShareInfo> Access { get; set; }
     }
-    [Table("page_view")]
+    [Table("storage_info")]
+    [Document(StorageType = StorageType.Json)]
+    public class StorageInfo
+    {
+        [RedisIdField][Indexed] public string Id { get; set; }
+        [Indexed(Sortable = true)]
+
+        public string Username { set; get; }
+        [Indexed(Sortable = true)]
+
+        public long TotalSize { set; get; } = AppConstants.DefaultStorageSize;
+
+        [Indexed(Sortable = true)]
+
+        public long UsedSize { set; get; } = 0;
+
+        [Indexed(Sortable = true)]
+        public string PackageName { set; get; } = "Default";
+
+        [Indexed(Sortable = true)]
+
+        public DateTime CreatedDate { set; get; } 
+
+        public long GetFreeSpace()
+        {
+            return TotalSize - UsedSize;
+        }
+    }
+        [Table("page_view")]
     [Document(StorageType = StorageType.Json)]
     public class PageView
     {
@@ -184,8 +213,14 @@ namespace FileGue.Models
         [Indexed(Sortable = true)]
         public string? LinkedIn { set; get; }
         [Indexed(Sortable = true)]
+        
+        public string? City { set; get; }
+      
+      
 
+        [Indexed(Sortable = true)]
         public bool TwoFactor { set; get; }
+
         [Indexed(Sortable = true)]
         public bool AlertIntruder { set; get; }
 
@@ -194,7 +229,19 @@ namespace FileGue.Models
     public enum Roles { Admin, User, Pengurus, Unknown }
     #endregion
     #region helpers model
-    public class SearchItem
+
+    public class GroupedFile
+    {
+        public string GroupName { get; set; }
+        public List<DriveFile> Files { get; set; }
+    }
+    public class NewCommands
+    {
+        public const string CreateFolder = "CreateFolder";
+        public const string UploadFiles = "UploadFiles";
+        public const string UploadFolder = "UploadFolder";
+    }
+        public class SearchItem
     {
         public DriveFolder ParentFolder { get; set; }
         public DriveFile File { get; set; }
@@ -210,6 +257,63 @@ namespace FileGue.Models
         public const string PowerPoint = "PowerPoint";
         public const string Pdf = "Pdf";
         public const string Text = "Text";
+
+        public static string GetFileType(string FileName)
+        {
+            var ext = Path.GetExtension(FileName);
+            switch (ext)
+            {
+                case ".bmp":
+                case ".jpg":
+                case ".gif":
+                case ".png":
+                case ".jpeg":
+                    return Image;
+                    break;
+                case ".doc":
+                case ".docx":
+                    return Word;
+                    break;
+                case ".xls":
+                case ".xlsx":
+                    return Excel;
+                    break;
+                case ".ppt":
+                case ".pptx":
+                    return PowerPoint;
+                    break;
+                case ".pdf":
+                    return Pdf;
+                    break;
+                case ".mp3":
+                case ".wav":
+                case ".flac":
+                case ".mid":
+                    return Audio;
+                    break;
+                case ".mp4":
+                case ".avi":
+                case ".mpeg":
+                case ".mpg":
+                case ".wmv":
+                    return Video;
+                    break;
+                case ".zip":
+                case ".rar":
+                case ".tar":
+                case ".tar.gz":
+                case ".7z":
+                    return Compressed;
+                    break;
+                case ".txt":
+                case ".rtf":
+                    return Text;
+                    break;
+
+
+            }
+            return "Unknown";
+        }
     }
 
 
@@ -217,6 +321,7 @@ namespace FileGue.Models
     {
         public string UID { get; set; }
         public string Name { get; set; }
+        public string Desc { get; set; }
         public long Size { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime UpdatedDate { get; set; }
@@ -234,6 +339,7 @@ namespace FileGue.Models
         public string FileType { get; set; }
         public string Extension { get; set; }
         public long Size { get; set; }
+        public string Owner { get; set; }
         public bool Favorite { get; set; } = false;
         public string Path { get; set; }
         public DateTime CreatedDate { get; set; }

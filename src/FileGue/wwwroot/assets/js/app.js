@@ -58,7 +58,7 @@ function InitJs() {
 
     "use strict";
 
-    jQuery(document).ready(function () {
+    //jQuery(document).ready(function () {
 
         /*---------------------------------------------------------------------
         Tooltip
@@ -746,5 +746,5 @@ function InitJs() {
             $(this).parents('.btn-group').find('.search-replace').html(selHtml);
             $(this).parents('.btn-group').find('.search-query').val(selName);
         });
-    });
+    //});
 }
