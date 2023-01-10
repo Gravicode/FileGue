@@ -15,9 +15,10 @@ namespace FileGue.Data
         public string Username { get; set; }
         public string KeyStr { get; set; }
         public bool IsInit { get; set; } = false;
-        public DriveService()
+        public DriveService(PooledRedisClientManager redisManager)
         {
-            using var redisManager = new PooledRedisClientManager(AppConstants.RedisCon);
+            //var con = !string.IsNullOrEmpty(AppConstants.RedisPassword) ? $"{AppConstants.RedisPassword}@{AppConstants.RedisCon}":AppConstants.RedisCon;
+            //using var redisManager = new PooledRedisClientManager(con);
             using var redis = redisManager.GetClient();
             db = redis.As<Drive>();
             IsInit = false;
@@ -72,6 +73,194 @@ namespace FileGue.Data
             return find;
         }
 
+        public List<DriveFile> GetRecentFiles(int Limit=10)
+        {
+            try
+            {
+                var files = TraceFiles(MyDrive.RootFolder);
+                return files.OrderByDescending(x=>x.CreatedDate).Take(Limit).ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+            return new List<DriveFile>();
+        }
+        
+        public List<DriveFolder> GetRecentFolders(int Limit=10)
+        {
+            try
+            {
+                var folders = TraceFolders(MyDrive.RootFolder);
+                return folders.OrderByDescending(x=>x.CreatedDate).Take(Limit).ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+            return new List<DriveFolder>();
+        }
+
+        public List<DriveFile> GetAllFiles()
+        {
+            try
+            {
+                var files = TraceFiles(MyDrive.RootFolder);
+                return files;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+            return new List<DriveFile>();
+        } 
+        
+        public List<DriveFile> GetDeletedFiles()
+        {
+            try
+            {
+                var files = TraceDeletedFiles(MyDrive.RootFolder);
+                return files;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+            return new List<DriveFile>();
+        } 
+        
+        public List<DriveFile> GetFavoriteFiles()
+        {
+            try
+            {
+                var files = TraceFiles(MyDrive.RootFolder,true);
+                return files;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+            return new List<DriveFile>();
+        }
+        List<DriveFolder> TraceFolders(DriveFolder folder)
+        {
+            var folders = new List<DriveFolder>();
+            
+            foreach (var subfolder in folder.Folders)
+            {
+                if (!subfolder.IsDeleted )
+                {
+                    folders.Add(subfolder);
+                    var adds = TraceFolders(subfolder);
+                    if (adds.Count > 0)
+                        folders.AddRange(adds);
+                }
+            }
+            return folders;
+        }
+
+        public DriveFolder GetFolderByUid(string FolderUid)
+        {
+            var find = TraceFolderByUID(MyDrive.RootFolder,FolderUid);
+            return find;
+        } 
+        public DriveFile GetFileByUid(string FileUid)
+        {
+            var find = TraceFileByUID(MyDrive.RootFolder,FileUid);
+            return find;
+        }
+
+        DriveFolder TraceFolderByUID(DriveFolder folder, string FolderUid)
+        {
+            if (folder.UID == FolderUid) return folder;
+            foreach (var subfolder in folder.Folders)
+            {
+                var find = TraceFolderByUID(subfolder,FolderUid);
+                if (find != null) return find;
+            }
+            return default;
+        } 
+        
+        DriveFile TraceFileByUID(DriveFolder folder, string FileUid)
+        {
+            foreach(var file in folder.Files)
+            {
+                if (file.UID == FileUid) return file;
+            }
+            foreach (var subfolder in folder.Folders)
+            {
+                var find = TraceFileByUID(subfolder,FileUid);
+                if (find != null) return find;
+            }
+            return default;
+        }
+
+        List<DriveFolder> TraceFolders(DriveFolder folder, bool Favorite)
+        {
+            var folders = new List<DriveFolder>();
+            
+            foreach (var subfolder in folder.Folders)
+            {
+                if (!subfolder.IsDeleted && subfolder.Favorite == Favorite)
+                {
+                    folders.Add(subfolder);
+                    var adds = TraceFolders(subfolder,Favorite);
+                    if (adds.Count > 0)
+                        folders.AddRange(adds);
+                }
+            }
+            return folders;
+        }
+        List<DriveFile> TraceFiles(DriveFolder folder,bool Favorite)
+        {
+            var files = new List<DriveFile>();
+            foreach (var file in folder.Files)
+            {
+                if(file.Favorite == Favorite && !file.IsDeleted)
+                    files.Add(file);
+            }
+            foreach (var subfolder in folder.Folders)
+            {
+                var adds = TraceFiles(subfolder,Favorite);
+                if (adds.Count > 0)
+                    files.AddRange(adds);
+            }
+            return files;
+        }
+        List<DriveFile> TraceFiles(DriveFolder folder)
+        {
+            var files = new List<DriveFile>();
+            foreach(var file in folder.Files)
+            {
+                if(!file.IsDeleted)
+                    files.Add(file);
+            }
+            foreach(var subfolder in folder.Folders)
+            {
+                var adds = TraceFiles(subfolder);
+                if (adds.Count > 0)
+                    files.AddRange(adds);
+            }
+            return files;
+        }
+
+        List<DriveFile> TraceDeletedFiles(DriveFolder folder)
+        {
+            var files = new List<DriveFile>();
+            foreach (var file in folder.Files)
+            {
+                if (file.IsDeleted)
+                    files.Add(file);
+            }
+            foreach (var subfolder in folder.Folders)
+            {
+                var adds = TraceDeletedFiles(subfolder);
+                if (adds.Count > 0)
+                    files.AddRange(adds);
+            }
+            return files;
+        }
+
         DriveFolder TraceFolder(DriveFolder folder,string FolderUid)
         {
             if (folder.UID == FolderUid) return folder;
@@ -97,7 +286,13 @@ namespace FileGue.Data
             var item = Folder.Files.FirstOrDefault(x => x.UID == FileUid);
             if (item != null)
             {
-                return Folder.Files.Remove(item);
+                var res = Folder.Files.Remove(item);
+                if (res)
+                {
+                    Save();
+                    return res;
+                }
+               
             }
             return false;
         }
@@ -108,13 +303,13 @@ namespace FileGue.Data
             var files = SearchFiles(folder, Keyword, Extension);
             return files;
         }
-        List<DriveFile> SearchFiles(DriveFolder currentFolder, string Keyword, string Extension = "")
+        public List<DriveFile> SearchFiles(DriveFolder currentFolder, string Keyword, string Extension = "")
         {
             var files = new List<DriveFile>();
             var query = string.IsNullOrEmpty(Keyword) ? currentFolder.Files :  currentFolder.Files.Where(x => x.Name.Contains(Keyword));
             if (!string.IsNullOrEmpty(Extension))
             {
-                query = query.Where(x => x.Extension == Extension);
+                query = query.Where(x => Extension.Contains(x.Extension));
             }
             files = query.ToList();
 

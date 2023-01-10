@@ -31,7 +31,7 @@
                     </div>
                   
 
-                    <button type="submit" class="btn btn-primary">Create</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 </EditForm>
 
@@ -46,7 +46,7 @@
     string UserName;
     public string FileUrl { get; set; }
     [Parameter]
-    public string CustomHeader { get; set; } = "Create New Folder";
+    public string CustomHeader { get; set; } = "Create New/Edit Folder";
     [Parameter]
     public DriveFolder TaskObject { get; set; } = new();
     [Parameter]
@@ -68,11 +68,24 @@
 
     }
 
+    public void Reset()
+    {
+        TaskObject = new();
+        StateHasChanged();
+    }
+
+    public async Task SetFolder(DriveFolder folder)
+    {
+        TaskObject = folder;
+        await InvokeAsync(StateHasChanged);
+    }
 
     private async void HandleValidSubmit()
     {
         try
         {
+            bool RefreshFolder = false;
+            DriveFolder ChangeItem;
             var ErrorMsg = string.Empty;
             if (string.IsNullOrEmpty(TaskObject.Name))
             {
@@ -87,20 +100,34 @@
                 toastService.ShowError(ErrorMsg);
                 return;
             }
-            TaskObject.UID = UIDHelper.CreateNewUID();
-            TaskObject.CreatedDate = DateHelper.GetLocalTimeNow();
-            TaskObject.Files = new();
-            TaskObject.Folders = new();
-            TaskObject.IsRoot = false;
-            TaskObject.Path = "/" + TaskObject.Name;
-            TaskObject.Size = 0;
-            TaskObject.UpdatedDate = DateHelper.GetLocalTimeNow();
-            MyDrive.RootFolder.Folders.Add(TaskObject);
+            if (string.IsNullOrEmpty(TaskObject.UID))
+            {
+                TaskObject.UID = UIDHelper.CreateNewUID();
+                TaskObject.CreatedDate = DateHelper.GetLocalTimeNow();
+                TaskObject.Files = new();
+                TaskObject.Folders = new();
+                TaskObject.IsRoot = false;
+                TaskObject.Path = "/" + TaskObject.Name;
+                TaskObject.Size = 0;
+                TaskObject.UpdatedDate = DateHelper.GetLocalTimeNow();
+                MyDrive.RootFolder.Folders.Add(TaskObject);
+            }
+            else
+            {
+                ChangeItem = DriveSvc.GetFolderByUid(TaskObject.UID);
+                ChangeItem.UpdatedDate = DateHelper.GetLocalTimeNow();
+                ChangeItem.Name = TaskObject.Name;
+                ChangeItem.Desc = TaskObject.Desc;
+                RefreshFolder = true;
+            }
+            
             DriveSvc.Save();
             await CloseTaskModal();
             DataChanged?.Invoke();
-            toastService.ShowSuccess("Folder created.");
+            toastService.ShowSuccess("Folder saved.");
             AppState.RefreshDrive(UserName);
+            if(RefreshFolder)
+                AppState.RefreshFolder(TaskObject.UID);
         }
         catch (Exception ex)
         {

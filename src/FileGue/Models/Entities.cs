@@ -11,6 +11,60 @@ using System.Reflection;
 namespace FileGue.Models
 {
     #region redis model
+
+    public class RecycleItemTypes
+    {
+        public const string File = "File";
+        public const string Folder = "Folder";
+    }
+
+    [Table("file_stat")]
+    [Document(StorageType = StorageType.Json)]
+    public class FileStat
+    {
+        [RedisIdField][Indexed] public string Id { get; set; }
+        [Indexed(Sortable = true)]
+
+        public string UID { set; get; }
+
+        [Indexed(Sortable = true)]
+        public string Name { get; set; }
+
+        [Indexed(Sortable = true)]
+        public string StatType { get; set; }
+
+        [Indexed(Sortable = true)]
+        public string Username { get; set; }
+
+        [Indexed(Sortable = true)]
+        public DateTime CreatedDate { get; set; }
+
+        [Indexed(Sortable = true)]
+        public long Size { get; set; }
+    }
+
+    [Table("recycle")]
+    [Document(StorageType = StorageType.Json)]
+    public class Recycle
+    {
+        [RedisIdField][Indexed] public string Id { get; set; }
+        [Indexed(Sortable = true)]
+
+        public string UID { set; get; }
+
+        [Indexed(Sortable = true)]
+        public string RecycleItemType { get; set; }
+
+        [Indexed(Sortable = true)]
+        public string Name { get; set; }
+
+        [Indexed(Sortable = true)]
+        public DateTime DeletedDate { get; set; }
+
+        [Indexed(Sortable = true)]
+        public DriveFile FileItem { get; set; }
+    }
+
     [Table("share_link")]
     //[Document(StorageType = StorageType.Json)]
     public class ShareLink
@@ -51,14 +105,14 @@ namespace FileGue.Models
 
         [Indexed(Sortable = true)]
 
-        public DateTime CreatedDate { set; get; } 
+        public DateTime CreatedDate { set; get; }
 
         public long GetFreeSpace()
         {
             return TotalSize - UsedSize;
         }
     }
-        [Table("page_view")]
+    [Table("page_view")]
     [Document(StorageType = StorageType.Json)]
     public class PageView
     {
@@ -213,10 +267,10 @@ namespace FileGue.Models
         [Indexed(Sortable = true)]
         public string? LinkedIn { set; get; }
         [Indexed(Sortable = true)]
-        
+
         public string? City { set; get; }
-      
-      
+
+
 
         [Indexed(Sortable = true)]
         public bool TwoFactor { set; get; }
@@ -241,7 +295,13 @@ namespace FileGue.Models
         public const string UploadFiles = "UploadFiles";
         public const string UploadFolder = "UploadFolder";
     }
-        public class SearchItem
+    
+    public class StatTypes
+    {
+        public const string Download = "D";
+        public const string Upload = "U";
+    }
+    public class SearchItem
     {
         public DriveFolder ParentFolder { get; set; }
         public DriveFile File { get; set; }
@@ -260,7 +320,7 @@ namespace FileGue.Models
 
         public static string GetFileType(string FileName)
         {
-            var ext = Path.GetExtension(FileName);
+            var ext = Path.GetExtension(FileName.ToLower());
             switch (ext)
             {
                 case ".bmp":
@@ -330,6 +390,7 @@ namespace FileGue.Models
         public string Path { get; set; }
         public List<DriveFile> Files { get; set; } = new();
         public List<DriveFolder> Folders { get; set; } = new();
+        public bool IsDeleted { get; set; } = false;
     }
 
     public class DriveFile
@@ -346,6 +407,7 @@ namespace FileGue.Models
         public DateTime UpdatedDate { get; set; }
         public string FileUrl { get; set; }
         public string ParentFolderUid { set; get; }
+        public bool IsDeleted { get; set; } = false;
     }
     public class PageViewMonth
     {

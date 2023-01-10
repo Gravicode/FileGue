@@ -12,6 +12,7 @@ namespace FileGue.Data
         public static string StorageSecret = "";
         public static string StorageBucket = "";
 
+        public static long MaxAllowedFileSize = 10*1024000;
         public static long DefaultStorageSize = 21474836480;
 
         public static string UploadUrlPrefix = "https://storagemurahaje.blob.core.windows.net/FileGue";

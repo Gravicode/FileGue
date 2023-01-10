@@ -4,6 +4,7 @@
 @inject DriveService DriveSvc
 @inject UserProfileService UserSvc
 @inject StorageInfoService StorageSvc
+@inject FileStatService FileStatSvc
 @using System.IO
 @inject AppState AppState
 <div class="modal" tabindex="-1" role="dialog" id="uploadFileModal">
@@ -25,7 +26,7 @@
 
                         <select @onchange="SelectFolder" id="jenis">
                             @if (MyDrive != null)
-                                foreach (var folder in MyDrive.RootFolder.Folders)
+                                foreach (var folder in MyDrive.RootFolder.Folders.Where(x=>!x.IsDeleted))
                                 {
                                     <option value="@folder.UID">@folder.Name</option>
                                 }
@@ -80,6 +81,8 @@
     StorageInfo MyStorage { set; get; }
     UserProfile SelUser { set; get; }
 
+
+
     void SelectFolder(ChangeEventArgs e)
     {
         SelectedFolderUID = e.Value.ToString();
@@ -93,22 +96,31 @@
         if (user.Identity.IsAuthenticated)
         {
             UserName = user.Identity.Name;
-            DriveSvc.InitDrive(UserName);
-            MyDrive = DriveSvc.MyDrive;
             SelUser = UserSvc.GetItemByUsername(UserName);
         }
-        if (SelectedFolder == null && MyDrive.RootFolder.Folders.Count>0)
+        LoadData();
+
+    }
+    void LoadData()
+    {
+        DriveSvc.InitDrive(UserName);
+        MyDrive = DriveSvc.MyDrive;
+
+        if (SelectedFolder == null && MyDrive.RootFolder.Folders.Count > 0)
         {
             SelectedFolder = MyDrive.RootFolder.Folders[0];
             SelectedFolderUID = SelectedFolder.UID;
         }
 
     }
-
     public void Reset()
     {
-
+        FileUrl = string.Empty;
+        SelectedFolder = null;
+        LoadData();
         UploadedFiles.Clear();
+        CustomHeader = "Upload Files";
+        StateHasChanged();
     }
 
     private async void Submit()
@@ -133,6 +145,7 @@
             foreach (var file in UploadedFiles)
             {
                 SelectedFolder.Files.Add(file);
+                var log = FileStatSvc.InsertData(new FileStat() { CreatedDate = DateHelper.GetLocalTimeNow(), Name = file.Name, Size = file.Size, StatType = StatTypes.Upload, UID=file.UID, Username=UserName });
             }
             DriveSvc.Save();
             var used = DriveSvc.GetUsedSize();
@@ -180,7 +193,7 @@
             if (file != null)
             {
                 var ms = new MemoryStream();
-                await file.OpenReadStream().CopyToAsync(ms);
+                await file.OpenReadStream(AppConstants.MaxAllowedFileSize).CopyToAsync(ms);
                 var bytes = ms.ToArray();
                 //SKiaImageHelper.FixedSize(ms, 900, 500, false);
                 string newName = string.Empty;

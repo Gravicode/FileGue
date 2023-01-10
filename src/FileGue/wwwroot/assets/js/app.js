@@ -54,6 +54,48 @@ Index Of Script
 
 })(jQuery);
 
+function ApplyListGrid() {
+    /*---------------------------------------------------------------------
+       List and Grid
+       -----------------------------------------------------------------------*/
+    $('.list-grid-toggle').click(function () {
+        var txt = $(".icon").hasClass('icon-grid') ? 'List' : 'Grid';
+        $('.icon').toggleClass('icon-grid');
+        $(".label").text(txt);
+    })
+
+    /*---------------------------------------------------------------------
+       Magnific Popup
+       -----------------------------------------------------------------------*/
+    if (typeof $.fn.magnificPopup !== typeof undefined) {
+        jQuery('.popup-gallery, .icon-grid').magnificPopup({
+            delegate: 'a.image-popup-vertical-fit',
+            type: 'image',
+            tLoading: 'Loading image #%curr%...',
+            mainClass: 'mfp-img-mobile',
+            gallery: {
+                enabled: true,
+                navigateByImgClick: true,
+                preload: [0, 1] // Will preload 0 - before current, and 1 after the current image
+            },
+            image: {
+                tError: '<a href="%url%">The image #%curr%</a> could not be loaded.',
+                titleSrc: function (item) {
+                    return item.el.attr('title') + '<small>by ' + item.el.attr('desc') +'</small>';
+                }
+            }
+        });
+        jQuery('.popup-youtube, .popup-vimeo, .popup-gmaps').magnificPopup({
+            disableOn: 700,
+            type: 'iframe',
+            mainClass: 'mfp-fade',
+            removalDelay: 160,
+            preloader: false,
+            fixedContentPos: false
+        });
+    }
+}
+
 function InitJs() {
 
     "use strict";

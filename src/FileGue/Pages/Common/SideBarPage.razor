@@ -44,7 +44,7 @@
                     </a>
                     <ul id="mydrive" class="iq-submenu collapse" data-parent="#iq-sidebar-toggle">
                        @if(MyDrive!=null)
-                       foreach(var folder in MyDrive.RootFolder.Folders){
+                       foreach(var folder in MyDrive.RootFolder.Folders.Where(x=>!x.IsDeleted)){
                         <li class=" ">
                             <a href="@($"/browse-folder/{folder.UID}")">
                                 <i class="las la-icons"></i><span>@folder.Name</span>
@@ -90,6 +90,8 @@
     </div>
 </div>
 @code {
+    [CascadingParameter]
+    public MainLayout Layout { get; set; }
     async void Refresh(string username)
     {
         if (UserName == username)
@@ -132,6 +134,7 @@
         {
             case NewCommands.CreateFolder:
                 await IJS.InvokeVoidAsync("ShowModal", "newFolderModal");
+                Layout.ResetAddNewFolder();
                 break;
             case NewCommands.UploadFolder:
                 NotAvailable();    
@@ -139,6 +142,8 @@
                 break;
             case NewCommands.UploadFiles:
                 await IJS.InvokeVoidAsync("ShowModal", "uploadFileModal");
+                Layout.ResetUploadFile();
+
                 break;
             default:
                 break;

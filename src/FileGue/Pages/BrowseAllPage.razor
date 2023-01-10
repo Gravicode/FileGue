@@ -1,4 +1,14 @@
 ﻿@page "/browse-all"
+@using Microsoft.AspNetCore.WebUtilities;
+@inject IJSRuntime IJS
+@inject IToastService toastService
+@inject AzureBlobHelper AzureBlobHelper
+@inject UserProfileService UserSvc
+@inject DriveService DriveSvc
+@inject FileStatService FileStatSvc
+@inject NavigationManager NavMgr
+@inject AppState AppState
+@implements IDisposable
 <div class="row">
     <div class="col-lg-12">
         <div class="d-flex align-items-center justify-content-between welcome-content mb-3">
@@ -39,50 +49,64 @@
 </div>
 <div class="icon icon-grid i-grid">
     <div class="row">
-        <div class="col-lg-3 col-md-6 col-sm-6">
-            <div class="card card-block card-stretch card-height">
-                <div class="card-body image-thumb">
-                    <div class="mb-4 text-center p-3 rounded iq-thumb">
-                        <div class="iq-image-overlay"></div>
-                        <a href="#" data-title="Spike.pdf" data-load-file="file" data-load-target="#resolte-contaniner" data-url="/assets/vendor/doc-viewer/files/demo.pdf" data-toggle="modal" data-target="#exampleModal"><img src="/assets/images/layouts/page-7/pdf.png" class="img-fluid" alt="image1"></a>
+        @if (GroupedFiles != null)
+            foreach (var grpFile in GroupedFiles)
+            {
+                <div class="col-lg-12">
+                    <div class="card card-block card-stretch card-transparent">
+                        <div class="card-header d-flex justify-content-between pb-0">
+                            <div class="header-title">
+                                <h4 class="card-title">@grpFile.GroupName</h4>
+                            </div>
+                        </div>
                     </div>
-                    <h6>Spike.pdf</h6>
                 </div>
-            </div>
-        </div>
-        <div class="col-lg-3 col-md-6 col-sm-6">
-            <div class="card card-block card-stretch card-height">
-                <div class="card-body image-thumb">
-                    <div class="mb-4 text-center p-3 rounded iq-thumb">
-                        <div class="iq-image-overlay"></div>
-                        <a href="#" data-title="Support.docx" data-load-file="file" data-load-target="#resolte-contaniner" data-url="/assets/vendor/doc-viewer/files/demo.docx" data-toggle="modal" data-target="#exampleModal"><img src="/assets/images/layouts/page-7/doc.png" class="img-fluid" alt="image1"></a>
+                @foreach (var file in grpFile.Files)
+                {
+                    <div class="col-lg-3 col-md-6 col-sm-6">
+                        <div class="card card-block card-stretch card-height">
+                            <div class="card-body image-thumb ">
+                                <div class="mb-4 text-center p-3 rounded iq-thumb">
+                                    @if (file.FileType == FileTypes.Image)
+                                    {
+                                        <a class="image-popup-vertical-fit" @onclick="()=>HitDownload(file)" desc="@file.Owner" title="@file.Name" href="@(string.IsNullOrEmpty(file.FileUrl)?"/assets/images/layouts/page-1/01.png":file.FileUrl)">
+                                            <img src="@(string.IsNullOrEmpty(file.FileUrl)?"/assets/images/layouts/page-1/01.png":file.FileUrl)" class="img-fluid" alt="images" />
+                                            <div class="iq-image-overlay"></div>
+                                        </a>
+                                    }
+                                    else if (file.FileType == FileTypes.Pdf)
+                                    {
+                                        <div class="iq-image-overlay"></div>
+                                        <a href="#" data-load-file="file" @onclick="()=>HitDownload(file)" data-load-target="#resolte-contaniner" data-url="@file.FileUrl" data-toggle="modal" data-target="#exampleModal" data-title="@file.Name"><img src="/assets/images/layouts/page-1/pdf.png" class="img-fluid" alt="image1"></a>
+                                    }
+                                    else if (file.FileType == FileTypes.Word)
+                                    {
+                                        <div class="iq-image-overlay"></div>
+                                        <a href="#" data-title="@file.Name" @onclick="()=>HitDownload(file)" data-load-file="file" data-load-target="#resolte-contaniner" data-url="@file.FileUrl" data-toggle="modal" data-target="#exampleModal"><img src="/assets/images/layouts/page-1/doc.png" class="img-fluid" alt="image1"></a>
+                                    }
+                                    else if (file.FileType == FileTypes.Excel)
+                                    {
+                                        <div class="iq-image-overlay"></div>
+                                        <a href="#" data-title="@file.Name" @onclick="()=>HitDownload(file)" data-load-file="file" data-load-target="#resolte-contaniner" data-url="@file.FileUrl" data-toggle="modal" data-target="#exampleModal"><img src="/assets/images/layouts/page-1/xlsx.png" class="img-fluid" alt="image1"></a>
+                                    }
+                                    else if (file.FileType == FileTypes.PowerPoint)
+                                    {
+                                        <div class="iq-image-overlay"></div>
+                                        <a href="#" data-title="@file.Name" @onclick="()=>HitDownload(file)" data-load-file="file" data-load-target="#resolte-contaniner" data-url="@file.FileUrl" data-toggle="modal" data-target="#exampleModal"><img src="/assets/images/layouts/page-1/ppt.png" class="img-fluid" alt="image1"></a>
+                                    }
+                                    else
+                                    {
+                                        <div class="iq-image-overlay"></div>
+                                        <a href="@file.FileUrl" data-title="@file.Name" @onclick="()=>HitDownload(file)" target="_blank"><img src="/assets/images/layouts/page-1/xml.png" class="img-fluid" alt="image1"></a>
+                                    }
+
+                                </div>
+                                <h6>@file.Name</h6>
+                            </div>
+                        </div>
                     </div>
-                    <h6>Support.docx</h6>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-3 col-md-6 col-sm-6">
-            <div class="card card-block card-stretch card-height">
-                <div class="card-body image-thumb">
-                    <div class="mb-4 text-center p-3 rounded iq-thumb">
-                        <div class="iq-image-overlay"></div>
-                        <a href="#" data-title="Colour.xlsx" data-load-file="file" data-load-target="#resolte-contaniner" data-url="/assets/vendor/doc-viewer/files/demo.xlsx" data-toggle="modal" data-target="#exampleModal"><img src="/assets/images/layouts/page-7/xlsx.png" class="img-fluid" alt="image1"></a>
-                    </div>
-                    <h6>Colour.xlsx</h6>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-3 col-md-6 col-sm-6">
-            <div class="card card-block card-stretch card-height">
-                <div class="card-body image-thumb">
-                    <div class="mb-4 text-center p-3 rounded iq-thumb">
-                        <div class="iq-image-overlay"></div>
-                        <a href="#" data-title="Flavour.pptx" data-load-file="file" data-load-target="#resolte-contaniner" data-url="/assets/vendor/doc-viewer/files/demo.pptx" data-toggle="modal" data-target="#exampleModal"><img src="/assets/images/layouts/page-7/ppt.png" class="img-fluid" alt="image1"></a>
-                    </div>
-                    <h6>Flavour.pptx</h6>
-                </div>
-            </div>
-        </div>
+                }
+            }
     </div>
 </div>
 <div class="icon icon-grid i-list">
@@ -102,114 +126,67 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="icon-small bg-danger rounded mr-3">
-                                                <i class="ri-file-excel-line"></i>
-                                            </div>
-                                            <div data-load-file="file" data-load-target="#resolte-contaniner" data-url="/assets/vendor/doc-viewer/files/demo.pdf" data-toggle="modal" data-target="#exampleModal" data-title="alexa5.pdf" style="cursor: pointer;">Weekly Report.pdf</div>
-                                        </div>
-                                    </td>
-                                    <td>Me</td>
-                                    <td>Mar 30, 2020 Gail Forcewind</td>
-                                    <td>10 MB</td>
-                                    <td>
-                                        <div class="dropdown">
-                                            <span class="dropdown-toggle" id="dropdownMenuButton10" data-toggle="dropdown">
-                                                <i class="ri-more-fill"></i>
-                                            </span>
-                                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuButton10">
-                                                <a class="dropdown-item" href="#"><i class="ri-eye-fill mr-2"></i>View</a>
-                                                <a class="dropdown-item" href="#"><i class="ri-delete-bin-6-fill mr-2"></i>Delete</a>
-                                                <a class="dropdown-item" href="#"><i class="ri-pencil-fill mr-2"></i>Edit</a>
-                                                <a class="dropdown-item" href="#"><i class="ri-printer-fill mr-2"></i>Print</a>
-                                                <a class="dropdown-item" href="#"><i class="ri-file-download-fill mr-2"></i>Download</a>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="icon-small bg-primary rounded mr-3">
-                                                <i class="ri-file-download-line"></i>
-                                            </div>
-                                            <div data-load-file="file" data-load-target="#resolte-contaniner" data-url="/assets/vendor/doc-viewer/files/demo.docx" data-toggle="modal" data-target="#exampleModal" data-title="alexa6.docx" style="cursor: pointer;">Milestone.docx</div>
-                                        </div>
-                                    </td>
-                                    <td>Penny</td>
-                                    <td>Mar 31, 2020 Penny</td>
-                                    <td>65 MB</td>
-                                    <td>
-                                        <div class="dropdown">
-                                            <span class="dropdown-toggle" id="dropdownMenuButton11" data-toggle="dropdown">
-                                                <i class="ri-more-fill"></i>
-                                            </span>
-                                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuButton11">
-                                                <a class="dropdown-item" href="#"><i class="ri-eye-fill mr-2"></i>View</a>
-                                                <a class="dropdown-item" href="#"><i class="ri-delete-bin-6-fill mr-2"></i>Delete</a>
-                                                <a class="dropdown-item" href="#"><i class="ri-pencil-fill mr-2"></i>Edit</a>
-                                                <a class="dropdown-item" href="#"><i class="ri-printer-fill mr-2"></i>Print</a>
-                                                <a class="dropdown-item" href="#"><i class="ri-file-download-fill mr-2"></i>Download</a>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="icon-small bg-info rounded mr-3">
-                                                <i class="ri-file-excel-line"></i>
-                                            </div>
-                                            <div data-title="Alexa8.xlsx" data-load-file="file" data-load-target="#resolte-contaniner" data-url="/assets/vendor/doc-viewer/files/demo.xlsx" data-toggle="modal" data-target="#exampleModal" style="cursor: pointer;">Training center.xlsx</div>
-                                        </div>
-                                    </td>
-                                    <td>Banny</td>
-                                    <td>Mar 30, 2020 Banny</td>
-                                    <td>90 MB</td>
-                                    <td>
-                                        <div class="dropdown">
-                                            <span class="dropdown-toggle" id="dropdownMenuButton13" data-toggle="dropdown">
-                                                <i class="ri-more-fill"></i>
-                                            </span>
-                                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuButton13">
-                                                <a class="dropdown-item" href="#"><i class="ri-eye-fill mr-2"></i>View</a>
-                                                <a class="dropdown-item" href="#"><i class="ri-delete-bin-6-fill mr-2"></i>Delete</a>
-                                                <a class="dropdown-item" href="#"><i class="ri-pencil-fill mr-2"></i>Edit</a>
-                                                <a class="dropdown-item" href="#"><i class="ri-printer-fill mr-2"></i>Print</a>
-                                                <a class="dropdown-item" href="#"><i class="ri-file-download-fill mr-2"></i>Download</a>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="icon-small bg-success rounded mr-3">
-                                                <i class="ri-file-excel-line"></i>
-                                            </div>
-                                            <div data-load-file="file" data-load-target="#resolte-contaniner" data-url="/assets/vendor/doc-viewer/files/demo.docx" data-toggle="modal" data-target="#exampleModal" data-title="alexa7.pptx" style="cursor: pointer;">Flavour.pptx</div>
-                                        </div>
-                                    </td>
-                                    <td>Me</td>
-                                    <td>Apr 04, 2020 me</td>
-                                    <td>10 MB</td>
-                                    <td>
-                                        <div class="dropdown">
-                                            <span class="dropdown-toggle" id="dropdownMenuButton12" data-toggle="dropdown">
-                                                <i class="ri-more-fill"></i>
-                                            </span>
-                                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuButton12">
-                                                <a class="dropdown-item" href="#"><i class="ri-eye-fill mr-2"></i>View</a>
-                                                <a class="dropdown-item" href="#"><i class="ri-delete-bin-6-fill mr-2"></i>Delete</a>
-                                                <a class="dropdown-item" href="#"><i class="ri-pencil-fill mr-2"></i>Edit</a>
-                                                <a class="dropdown-item" href="#"><i class="ri-printer-fill mr-2"></i>Print</a>
-                                                <a class="dropdown-item" href="#"><i class="ri-file-download-fill mr-2"></i>Download</a>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
+                                @if (Files != null)
+                                    @foreach (var file in Files)
+                                    {
+                                        <tr @key="file.UID">
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="mr-3">
+                                                        @if (file.FileType == FileTypes.Image)
+                                                        {
+                                                            <a href="#"><img src="@(string.IsNullOrEmpty(file.FileUrl)?"/assets/images/layouts/page-1/01.png":file.FileUrl)" class="img-fluid avatar-30" alt="image1"></a>
+
+                                                        }
+                                                        else if (file.FileType == FileTypes.Pdf)
+                                                        {
+                                                            <a href="#"><img src="/assets/images/layouts/page-1/pdf.png" class="img-fluid avatar-30" alt="image1"></a>
+                                                        }
+                                                        else if (file.FileType == FileTypes.Word)
+                                                        {
+                                                            <a href="#"><img src="/assets/images/layouts/page-1/doc.png" class="img-fluid avatar-30" alt="image1"></a>
+
+                                                        }
+                                                        else if (file.FileType == FileTypes.Excel)
+                                                        {
+                                                            <a href="#"><img src="/assets/images/layouts/page-1/xlsx.png" class="img-fluid avatar-30" alt="image1"></a>
+
+                                                        }
+                                                        else if (file.FileType == FileTypes.PowerPoint)
+                                                        {
+                                                            <a href="#"><img src="/assets/images/layouts/page-1/ppt.png" class="img-fluid avatar-30" alt="image1"></a>
+
+                                                        }
+                                                        else
+                                                        {
+                                                            <a href="#"><img src="/assets/images/layouts/page-1/xml.png" class="img-fluid avatar-30" alt="image1"></a>
+
+                                                        }
+
+                                                    </div>
+                                                    @file.Name
+                                                </div>
+                                            </td>
+                                            <td>@file.Owner</td>
+                                            <td>@(file.UpdatedDate.ToString("MMM dd, yyyy"))</td>
+                                            <td>@(DriveHelper.GetSize(file.Size))</td>
+                                            <td>
+                                                <div class="dropdown">
+                                                    <span class="dropdown-toggle" id="dropdownMenuButton6" data-toggle="dropdown">
+                                                        <i class="ri-more-fill"></i>
+                                                    </span>
+                                                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuButton6">
+                                                        <a class="dropdown-item" @onclick="()=>HitDownload(file)" href="@file.FileUrl" target="_blank"><i class="ri-eye-fill mr-2"></i>View</a>
+                                                        <a class="dropdown-item" @onclick="(() => Delete(file))" data-toggle="modal" data-target="#confirmDeleteModal" href="#"><i class="ri-delete-bin-6-fill mr-2"></i>Delete</a>
+                                                        <a class="dropdown-item" href="#" @onclick="()=>SetFavorite(file,true)" @onclick:preventDefault><i class="ri-pencil-fill mr-2"></i>Favorite</a>
+                                                        <a class="dropdown-item" href="#" @onclick="()=>SetFavorite(file,false)" @onclick:preventDefault><i class="ri-eraser-line mr-2"></i>Not Favorite</a>
+                                                        <a class="dropdown-item" @onclick="()=>HitDownload(file)" href="@file.FileUrl" target="_blank"><i class="ri-file-download-fill mr-2"></i>Download</a>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+
+                                    }
                             </tbody>
                         </table>
                     </div>
@@ -219,5 +196,123 @@
     </div>
 </div>
 @code {
+    [Parameter]
+    public string Keyword { get; set; }
 
+    [Parameter]
+    public string Extension { get; set; }
+
+    [CascadingParameter]
+    public MainLayout Layout { get; set; }
+    public List<GroupedFile> GroupedFiles { get; set; }
+    public List<DriveFile> Files { get; set; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    string UserName;
+
+    Drive MyDrive { set; get; }
+    protected override async Task OnInitializedAsync()
+    {
+
+        var user = (await authenticationStateTask).User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            UserName = user.Identity.Name;
+            DriveSvc.InitDrive(UserName);
+            MyDrive = DriveSvc.MyDrive;
+        }
+        //check query string
+        var uri = NavMgr.ToAbsoluteUri(NavMgr.Uri);
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("q", out var resultKeyword))
+        {
+            if (!string.IsNullOrEmpty(resultKeyword))
+            {
+                Keyword = resultKeyword;
+            }
+        }
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("e", out var resultExt))
+        {
+            if (!string.IsNullOrEmpty(resultExt))
+            {
+                Extension = resultExt;
+            }
+        }
+        LoadData();
+        AppState.OnFolderChange += Refresh;
+        
+    }
+    async Task SetFavorite(DriveFile item, bool State)
+    {
+        item.Favorite = State;
+        DriveSvc.Save();
+        toastService.ShowSuccess($"set to {(State ? "favorite" : "not favorite")}");
+    }
+    public override async Task SetParametersAsync(ParameterView parameters)
+    {
+
+        await base.SetParametersAsync(parameters);
+
+        LoadData();
+    }
+    async void Refresh(string folderuid)
+    {
+        //if (FolderUid == folderuid)
+        {
+            LoadData();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+    public void Dispose()
+    {
+        AppState.OnFolderChange -= Refresh;
+    }
+    void LoadData()
+    {
+        DriveSvc.Refresh();
+        MyDrive = DriveSvc.MyDrive;
+
+        if (!string.IsNullOrEmpty(Keyword))
+        {
+            Files = DriveSvc.SearchFiles(MyDrive.RootFolder, Keyword,string.Empty);
+
+        }else if (!string.IsNullOrEmpty(Extension))
+        {
+            Files = DriveSvc.SearchFiles(MyDrive.RootFolder, string.Empty, Extension);
+        }
+        else
+        {
+            Files = DriveSvc.GetAllFiles();
+        }
+        
+        GroupedFiles = (from p in Files
+                        group p by p.FileType into g
+                        select new GroupedFile()
+                         {
+                             GroupName = g.Key,
+                             Files = g.ToList()
+                         }).ToList();
+
+    }
+    protected override void OnAfterRender(bool firstRender)
+    {
+
+        if (firstRender)
+        {
+            IJS.InvokeVoidAsync("ApplyListGrid");
+        }
+    }
+    async Task HitDownload(DriveFile file)
+    {
+        var log = FileStatSvc.InsertData(new FileStat() { CreatedDate = DateHelper.GetLocalTimeNow(), Name = file.Name, Size = file.Size, StatType = StatTypes.Download, UID = file.UID, Username = UserName });
+    }
+    void NotAvailable()
+    {
+        toastService.ShowWarning("This feature is not available yet.");
+    }
+    async Task Delete(DriveFile item)
+    {
+        Layout.PrepareDeleteFile(item);
+    }
 }

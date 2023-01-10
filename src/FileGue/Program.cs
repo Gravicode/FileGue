@@ -14,6 +14,7 @@ using FileGue.Models;
 using Redis.OM;
 using StackExchange.Redis;
 using Redis.OM.Skeleton.HostedServices;
+using ServiceStack.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -52,6 +53,7 @@ builder.Services.AddTransient<DriveService>();
 builder.Services.AddTransient<ShareLinkService>();
 builder.Services.AddTransient<StorageInfoService>();
 builder.Services.AddTransient<NotificationService>();
+builder.Services.AddTransient<FileStatService>();
 
 builder.Services.AddCors(options =>
 {
@@ -101,7 +103,7 @@ SmsService.TokenKey = Configuration["SmsSettings:TokenKey"];
 AppConstants.RedisCon = Configuration["ConnectionStrings:RedisCon"];
 AppConstants.RedisPassword = Configuration["ConnectionStrings:RedisPassword"];
 
-
+//redis OM
 var options = ConfigurationOptions.Parse(AppConstants.RedisCon); // host1:port1, host2:port2, ...
 if (!string.IsNullOrEmpty(AppConstants.RedisPassword))
 {
@@ -114,6 +116,10 @@ builder.Services.AddSingleton(new RedisConnectionProvider(options));
 var idx = new IndexCreationService();
 await idx.CreateIndex();
 builder.Services.AddSingleton(idx);
+//service stack
+var con = !string.IsNullOrEmpty(AppConstants.RedisPassword) ? $"{AppConstants.RedisPassword}@{AppConstants.RedisCon}" : AppConstants.RedisCon;
+var redisManager = new PooledRedisClientManager(con);
+builder.Services.AddSingleton(redisManager);
 
 //storage
 AppConstants.StorageEndpoint = Configuration["Storage:Endpoint"];
