@@ -180,7 +180,7 @@
                     </ul>
                 </div>
                 <div class="col-lg-6 text-right">
-                    Copyright 2020 <a href="#">CloudBOX</a> All Rights Reserved.
+                    Copyright @Tahun <a href="#">FileGue</a> All Rights Reserved.
                 </div>
             </div>
         </div>
@@ -199,6 +199,7 @@
 <PageCounter></PageCounter>
 <AuthControl></AuthControl>
 @code {
+    int Tahun = DateHelper.GetLocalTimeNow().Year;
     public string Keyword{ set; get; }
     public string Ext{ set; get; }
     AddNewFolder AddNewFolderPopup;
