@@ -60,7 +60,7 @@
                                                 <img class="crm-profile-pic rounded-circle avatar-100" @onclick="(()=>PrepareUpload())" src="@(string.IsNullOrEmpty(DataUser.PicUrl) ? "/assets/images/user/11.png" : DataUser.PicUrl)" alt="profile-pic">
                                                 <div class="crm-p-image bg-primary">
                                                     <i class="las la-pen upload-button" @onclick="(()=>PrepareUpload())"></i>
-                                                    <InputFile type="file" class="file-upload" id="fileInput1" OnChange="UploadFiles" accept="image/*" hidden />
+                                                    <InputFile type="file" class="file-upload" id="fileInputPhoto" OnChange="UploadFiles" accept="image/*" hidden />
                                                   
                                                 </div>
                                             </div>
@@ -241,7 +241,7 @@
     }
     async Task PrepareUpload()
     {
-        await jsRuntime.InvokeVoidAsync("OpenFileUpload", "fileInput1");
+        await jsRuntime.InvokeVoidAsync("OpenFileUpload", "fileInputPhoto");
     }
     protected override async Task OnInitializedAsync()
     {
@@ -322,7 +322,7 @@
         if (file != null)
         {
             var ms = new MemoryStream();
-            await file.OpenReadStream().CopyToAsync(ms);
+            await file.OpenReadStream(AppConstants.MaxAllowedFileSize).CopyToAsync(ms);
             var bytes = ImageHelper.FixedSize(ms, 250, 250, false);
             string newName = string.Empty;
 
