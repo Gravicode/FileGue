@@ -67,8 +67,8 @@
 
     <!-- This is the glue between Blazor and Chart.js -->
     <script src="_content/ChartJs.Blazor.Fork/ChartJsBlazorInterop.js"></script>
-    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDpqcgMnKf1TnQPRQKNmlnUgqh_EI0t_Iw&v=3"></script>
-    <script src="_content/BlazorGoogleMaps/objectManager.js"></script>
+  
+   
     <script src="js/custom.js"></script>
     <!-- Backend Bundle JavaScript -->
     <script src="assets/js/backend-bundle.min.js"></script>
@@ -168,8 +168,17 @@
                 ", Longitude: " + position.coords.longitude);
             DotNet.invokeMethodAsync('FileGue', 'UpdateLocationCaller', position.coords.latitude, position.coords.longitude);
         }
-    </script>
 
+            function initMap(){
+                /*
+                var map1 = new google.maps.Map(document.getElementById("map") as HTMLElement, {
+                    center: { lat: -34.397, lng: 150.644 },
+                    zoom: 8,
+                });*/
+            }
+    </script>
+    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDpqcgMnKf1TnQPRQKNmlnUgqh_EI0t_Iw&v=3&callback=initMap"></script>
+    <script src="_content/BlazorGoogleMaps/objectManager.js"></script>
     <script src="_framework/blazor.server.js"></script>
 </body>
 </html>
